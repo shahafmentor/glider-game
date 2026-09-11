@@ -66,8 +66,9 @@
   <div class="scroll">
     <div class="card" style="flex-direction:column;align-items:stretch">
       <div class="tname">איך משחקים</div>
-      <div class="tsub">👍 שתי הידיים מחזיקות את הטלפון, <b>שני האגודלים על המוט הלבן</b> בתחתית — כמו שמחזיקים דאון אמיתי.</div>
-      <div class="tsub">📱 <b>מטים את הטלפון</b> ימינה/שמאלה כדי לנווט. צריך להישאר על המסלול שמתפתל מולך.</div>
+      <div class="tsub">👍 שתי הידיים מחזיקות את הטלפון, <b>שני האגודלים על שני העיגולים</b> שעל המוט הלבן בתחתית.</div>
+      <div class="tsub">↔️ <b>מזיזים את האגודלים ימינה/שמאלה לאורך המוט</b> — והדאון פונה לשם, כמו מוט של דאון אמיתי. משחררים והמוט חוזר למרכז.</div>
+      <div class="tsub">📱 אפשר גם <b>להטות את הטלפון</b> — שתי השיטות עובדות יחד. צריך להישאר על המסלול שמתפתל מולך.</div>
       <div class="tsub">💨 נדבק לך משהו רע? <b>נושפים על המסך</b> כדי להעיף אותו.</div>
       <div class="tsub">🤝 כשכתוב <b>"שקשק!"</b> — מנערים את הטלפון כדי לעבור פלטפורמה. רק כשכתוב.</div>
       <div class="tsub">💰 מסיימים מסלול → מקבלים כסף → קונים את המסלול הבא.</div>
@@ -258,21 +259,34 @@ function fit(){ const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||
   cv.width=r.width*d; cv.height=r.height*d; cx.setTransform(d,0,0,d,0,0); if(G){G.W=r.width;G.H=r.height;} }
 addEventListener('resize',fit);
 
-/* אגודלים על המוט + גרירה כגיבוי */
-function padHit(x,y,W,H){ const by=H*.845,r=Math.min(64,W*.19);
+/* ===== ניווט באגודלים =====
+   שני האגודלים יושבים על הכריות שעל המוט. מזיזים אותם קצת ימינה או שמאלה
+   לאורך המוט — בדיוק כמו שמטים מוט של דאון אמיתי — והדאון פונה לכיוון הזה.
+   משחררים, והמוט חוזר למרכז. ההטיה של הטלפון ממשיכה לעבוד במקביל.        */
+let pads={}, steerPad=0, padPx=0;
+function padHit(x,y,W,H){ const by=H*.845,r=Math.min(78,W*.24);
   return (Math.hypot(x-W*.27,y-by)<r)||(Math.hypot(x-W*.73,y-by)<r); }
-cv.addEventListener('touchstart',e=>{ const r=cv.getBoundingClientRect(); let c=0;
-  for(const t of e.touches) if(padHit(t.clientX-r.left,t.clientY-r.top,r.width,r.height))c++;
-  thumbs=c; dragX=e.touches[0].clientX;
+function syncPads(e,r){
+  let sum=0,n=0;
+  for(const t of e.touches){ const p=pads[t.identifier]; if(!p)continue;
+    p.x=t.clientX; sum+=p.x-p.x0; n++; }
+  thumbs=n;
+  padPx = n? sum/n : padPx*.72;                       // חזרה רכה למרכז כשמשחררים
+  steerPad = Math.max(-1,Math.min(1, padPx/(r.width*.14)));
+}
+cv.addEventListener('touchstart',e=>{ const r=cv.getBoundingClientRect();
+  for(const t of e.changedTouches)
+    if(padHit(t.clientX-r.left,t.clientY-r.top,r.width,r.height))
+      pads[t.identifier]={x0:t.clientX,x:t.clientX};
+  syncPads(e,r); dragX=e.touches[0].clientX;
   // כשמשהו נדבק ואין מיקרופון — נגיעה בכל מקום במסך היא נשיפה
   if(!micOK&&G&&G.stuck) blowLevel=1; },{passive:true});
-cv.addEventListener('touchmove',e=>{ const r=cv.getBoundingClientRect(); let c=0;
-  for(const t of e.touches) if(padHit(t.clientX-r.left,t.clientY-r.top,r.width,r.height))c++;
-  thumbs=c;
-  if(dragX!=null&&!c){ tilt+=(e.touches[0].clientX-dragX)*.4; dragX=e.touches[0].clientX; } },{passive:true});
-cv.addEventListener('touchend',e=>{ const r=cv.getBoundingClientRect(); let c=0;
-  for(const t of e.touches) if(padHit(t.clientX-r.left,t.clientY-r.top,r.width,r.height))c++;
-  thumbs=c; if(!e.touches.length){ dragX=null; if(!micOK)blowLevel=0; } },{passive:true});
+cv.addEventListener('touchmove',e=>{ const r=cv.getBoundingClientRect(); syncPads(e,r);
+  if(dragX!=null&&!thumbs){ tilt+=(e.touches[0].clientX-dragX)*.4; dragX=e.touches[0].clientX; } },{passive:true});
+cv.addEventListener('touchend',e=>{ const r=cv.getBoundingClientRect();
+  for(const t of e.changedTouches) delete pads[t.identifier];
+  syncPads(e,r); if(!e.touches.length){ dragX=null; if(!micOK)blowLevel=0; } },{passive:true});
+cv.addEventListener('touchcancel',e=>{ pads={}; thumbs=0; steerPad=0; },{passive:true});
 
 /* ---- עולם ביחידות מרחק אמיתיות ---- */
 const HW=1.0;                                            // חצי רוחב המסלול ביחידות עולם
@@ -414,9 +428,11 @@ function update(dt){
   if(G.flash>0)G.flash-=dt;
 
   // ניווט
-  G.x += Math.max(-1,Math.min(1,tilt/26))*dt*2.6;
+  const steer=Math.max(-1,Math.min(1, Math.max(-1,Math.min(1,tilt/26)) + steerPad ));
+  G.x += steer*dt*2.6;
   G.x = Math.max(-3.4,Math.min(3.4,G.x));
   tilt*=.968;
+  if(!thumbs) padPx*=.86;                       // המוט חוזר למרכז אחרי שמשחררים
 
   // אבק/רוח חולפים
   for(const d of G.dust){ d.z-=G.speed*dt*1.35; if(d.z<1.4){ d.z=26+Math.random()*8; d.wx=G.x+(Math.random()-.5)*7; } }
@@ -649,23 +665,29 @@ function drawFrame(W,H){
   cx.beginPath(); cx.moveTo(apex[0],apex[1]); cx.lineTo(rt[0],rt[1]); cx.stroke();
   cx.strokeStyle='#55506a'; cx.lineWidth=t*.35;
   cx.beginPath(); cx.moveTo(apex[0]-2,apex[1]); cx.lineTo(lf[0]+6,lf[1]); cx.stroke();
-  // מוט אחיזה אופקי
+  // מוט אחיזה אופקי — נע ומתנדנד לפי האגודלים
   const by=H*.845, bh=Math.max(24,H*.038);
-  cx.fillStyle='#d9d5e6'; cx.strokeStyle='#8f8aa5'; cx.lineWidth=2;
-  cx.beginPath(); cx.roundRect(W*.10,by-bh/2,W*.80,bh,bh/2); cx.fill(); cx.stroke();
+  const sh=Math.max(-W*.11,Math.min(W*.11,padPx)), rot=steerPad*.085;
+  cx.save(); cx.translate(W/2+sh*.55,by); cx.rotate(rot); cx.translate(-W/2,-by);
   cx.fillStyle='#b7b2c9';
   cx.beginPath(); cx.roundRect(W*.05,by-bh*.75,W*.10,bh*1.5,7); cx.fill();
   cx.beginPath(); cx.roundRect(W*.85,by-bh*.75,W*.10,bh*1.5,7); cx.fill();
+  cx.fillStyle='#d9d5e6'; cx.strokeStyle='#8f8aa5'; cx.lineWidth=2;
+  cx.beginPath(); cx.roundRect(W*.10,by-bh/2,W*.80,bh,bh/2); cx.fill(); cx.stroke();
   // כריות אגודל
-  const r=Math.min(50,W*.15), ok=!HASTOUCH||thumbs>=2;
+  const r=Math.min(50,W*.15), ok=!HASTOUCH||thumbs>=2, act=Math.abs(steerPad)>.08;
   for(const px of [W*.27,W*.73]){
     cx.beginPath(); cx.arc(px,by,r,0,7);
-    cx.fillStyle=ok?'#ffffff1a':'#ff5d7a33'; cx.fill();
-    cx.strokeStyle=ok?'#ffffff59':'#ff5d7a'; cx.lineWidth=2.5; cx.stroke();
-    if(!ok){ cx.font='26px serif'; cx.fillStyle='#fff'; cx.fillText('👍',px,by); }
+    cx.fillStyle=ok?(act?'#6ee7ff33':'#ffffff1a'):'#ff5d7a33'; cx.fill();
+    cx.strokeStyle=ok?(act?'#6ee7ff':'#ffffff59'):'#ff5d7a'; cx.lineWidth=2.5; cx.stroke();
+    if(!ok){ cx.font='26px serif'; cx.textAlign='center'; cx.textBaseline='middle';
+             cx.fillStyle='#fff'; cx.fillText('👍',px,by); }
   }
-  if(HASTOUCH&&thumbs<2&&G.phase==='play'){
-    cx.font='700 14px sans-serif'; cx.fillStyle='#ff9db0'; cx.fillText('שני האגודלים על המוט',W/2,by+r+22);
+  cx.restore();
+  if(HASTOUCH&&G.phase==='play'){
+    cx.textAlign='center'; cx.textBaseline='middle'; cx.font='700 14px sans-serif';
+    if(thumbs<2){ cx.fillStyle='#ff9db0'; cx.fillText('שני האגודלים על המוט',W/2,by+r+24); }
+    else if(!act){ cx.fillStyle='#ffffff70'; cx.fillText('הזיזי את האגודלים ימינה/שמאלה כדי לפנות',W/2,by+r+24); }
   }
 }
 
