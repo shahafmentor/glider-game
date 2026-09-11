@@ -69,7 +69,7 @@
       <div class="tsub">👍 שתי הידיים מחזיקות את הטלפון, <b>שני האגודלים על שני העיגולים</b> שעל המוט הלבן בתחתית.</div>
       <div class="tsub">↔️ <b>מזיזים את האגודלים ימינה/שמאלה לאורך המוט</b> — והדאון פונה לשם, כמו מוט של דאון אמיתי. משחררים והמוט חוזר למרכז.</div>
       <div class="tsub">📱 אפשר גם <b>להטות את הטלפון</b> — שתי השיטות עובדות יחד. צריך להישאר על המסלול שמתפתל מולך.</div>
-      <div class="tsub">💨 נדבק לך משהו רע? <b>נושפים על המסך</b> כדי להעיף אותו.</div>
+      <div class="tsub">🟢 עיגול ירוק = פריט לאסוף · 🔴 עיגול אדום פועם = מכשול, זוזי הצידה כדי לחמוק ממנו.</div><div class="tsub">💨 נדבק לך מכשול לשמשה? <b>נושפים על המסך</b> כדי להעיף אותו — יש 8 שניות.</div>
       <div class="tsub">🤝 כשכתוב <b>"שקשק!"</b> — מנערים את הטלפון ומקבלים בונוס. מפספסים? לא קורה כלום.</div><div class="tsub">❤️ לב נעלם רק משני דברים: יציאה מהמסלול ליותר מ-2 שניות, או דבר רע שנדבק ולא נושפים אותו בזמן.</div>
       <div class="tsub">💰 מסיימים מסלול → מקבלים כסף → קונים את המסלול הבא.</div>
     </div>
@@ -290,6 +290,7 @@ cv.addEventListener('touchcancel',e=>{ pads={}; thumbs=0; steerPad=0; },{passive
 
 /* ---- עולם ביחידות מרחק אמיתיות ---- */
 const HW=1.0;                                            // חצי רוחב המסלול ביחידות עולם
+const SPAWN_Z=82;                                        // מרחק הופעת הפריטים — כמה זמן רואים אותם מתקרבים
 const pathAt=(d,n)=>Math.sin(d*.047+n)*1.25+Math.sin(d*.019+n*2.3)*.85+Math.sin(d*.0083+n*.7)*.5;
 const pathW =(d)=>HW*(1+.22*Math.sin(d*.061)+.12*Math.sin(d*.017+2));   // רוחב משתנה — לא פס אחיד
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -472,7 +473,7 @@ function update(dt){
     G.spawn=.7+Math.random()*.55;
     const bad=Math.random()<.25+Math.min(.13,G.n*.004);
     const pool=bad?G.t[3]:G.t[2];
-    const d=G.dist+44;
+    const d=G.dist+SPAWN_Z;       // נולדים רחוק — כ‑7 שניות טיסה עד שהם מגיעים
     // כל הפריטים — טובים ורעים — תמיד בתוך המסלול. מחוץ למסלול אין מה לאסוף.
     G.items.push({d, wx:pathAt(d,G.seed)+pathW(d)*(bad?(Math.random()<.5?-1:1)*(.3+Math.random()*.45):(Math.random()-.5)*.9),
                   bad, e:pool[Math.floor(Math.random()*pool.length)]});
@@ -482,6 +483,8 @@ function update(dt){
       if(Math.abs(it.wx-G.x)<.62){ if(it.bad){ if(!G.stuck)G.stuck={e:it.e,t:8}; } else { G.coins++; G.flash=.25; } } }
   }
   G.items=G.items.filter(i=>!i.dead);
+  // אזהרה מוקדמת: מכשול נמצא בדיוק בקו שלך
+  G.warn=G.items.find(it=>it.bad && it.d-G.dist<30 && Math.abs(it.wx-G.x)<.62);
 
   $('hud-hearts').textContent='❤️'.repeat(G.hearts)+'🖤'.repeat(3-G.hearts);
   $('hud-time').textContent=fmt(Math.max(0,G.time));
@@ -496,6 +499,8 @@ function update(dt){
   else if(G.shakeAsk>0) setCenter(`<div class="msg" style="color:var(--gold)">🤝 שקשק!</div>`
     +`<div class="cnt" style="font-size:30px;letter-spacing:4px;color:var(--gold)">${Math.ceil(G.shakeAsk)}</div>`
     +`<div class="lvl" style="letter-spacing:1px">יש לך זמן — נערי את הטלפון</div>`);
+  else if(G.warn) setCenter(`<div class="msg" style="font-size:26px;color:var(--bad)">${G.warn.e} זוזי הצידה!</div>`
+    +`<div class="lvl" style="letter-spacing:1px;margin-top:6px">${Math.ceil((G.warn.d-G.dist)/G.speed)} שנ׳ עד הפגיעה</div>`);
   else if(G.off>.8) setCenter(`<div class="msg" style="font-size:24px;color:var(--bad)">חזרי ל${G.t[6]}</div>`
     +`<div class="lvl" style="letter-spacing:1px;margin-top:8px">עוד ${(2.2-G.off).toFixed(1)} שנ׳ ותאבדי לב</div>`);
   else if(C.innerHTML) setCenter('');
@@ -628,15 +633,29 @@ function draw(){
     cx.moveTo(x,P.y-d.h*P.s*.25); cx.lineTo(x,P.y-d.h*P.s*.25+Math.min(26,P.s*.05)); cx.stroke(); }
   cx.globalAlpha=1;
 
-  /* --- פריטים: מרחוק לקרוב --- */
+  /* --- פריטים: מרחוק לקרוב.
+         ירוק = לאסוף · אדום פועם = מכשול, צריך לחמוק ממנו.
+         הגודל מוגבל והם נמוגים בעדינות במקום "לקפוץ" לענק בפריים האחרון. --- */
   cx.textBaseline='middle';
   const sorted=[...G.items].sort((a,b)=>b.d-a.d);
   for(const it of sorted){
-    const z=it.d-G.dist; if(z<1.2||z>VIS*.6)continue;
-    const P=proj(z,W,H), x=W/2+(it.wx-G.x)*P.s, s=Math.min(H*.34,P.s*.34);
-    cx.globalAlpha=Math.max(0,Math.min(1,1.5-z/(VIS*.55)));
+    const z=it.d-G.dist; if(z<1.6||z>SPAWN_Z+4)continue;
+    const P=proj(z,W,H), x=W/2+(it.wx-G.x)*P.s;
+    const s=Math.min(H*.17,P.s*.30);
+    const fadeIn=Math.min(1,(SPAWN_Z-z)/10), fadeOut=Math.min(1,(z-1.6)/1.6);
+    cx.globalAlpha=Math.max(0,Math.min(1,fadeIn*fadeOut));
+    if(s<4){ cx.globalAlpha=0; }
+    const near=Math.abs(it.wx-G.x)<.62;                       // בקו שלך
+    // טבעת סימון
+    const pr=s*(it.bad?.62+Math.sin(G.clock*6)*.06:.58);
+    cx.lineWidth=Math.max(2,s*.07);
+    cx.strokeStyle=it.bad?(near?'#ff3b5c':'#ff5d7a99'):'#22e06a99';
+    cx.beginPath(); cx.arc(x,P.y-s*.35,pr,0,7); cx.stroke();
+    if(it.bad&&near){ cx.globalAlpha*=.35; cx.fillStyle='#ff5d7a';
+      cx.beginPath(); cx.arc(x,P.y-s*.35,pr,0,7); cx.fill();
+      cx.globalAlpha=Math.max(0,Math.min(1,fadeIn*fadeOut)); }
     // צל על הקרקע
-    cx.fillStyle='#00000055'; cx.beginPath(); cx.ellipse(x,P.y+s*.42,s*.32,s*.1,0,0,7); cx.fill();
+    cx.fillStyle='#00000055'; cx.beginPath(); cx.ellipse(x,P.y+s*.1,s*.3,s*.09,0,0,7); cx.fill();
     cx.fillStyle='#fff'; cx.font=s+'px serif';
     cx.fillText(it.e,x,P.y-s*.35+Math.sin(G.clock*2+it.d)*s*.05);
   }
