@@ -451,7 +451,7 @@ function update(dt){
 
   // שקשוק
   G.shakeIn-=dt;
-  if(G.shakeIn<=0&&G.shakeAsk<=0){ G.shakeAsk=4; }
+  if(G.shakeIn<=0&&G.shakeAsk<=0){ G.shakeAsk=15; }    // חלון של 15 שניות לשקשק
   if(G.shakeAsk>0){
     G.shakeAsk-=dt;
     if(shakeFlag){ G.platform=(G.platform+1)%4; G.coins+=5; G.shakeAsk=0; G.shakeIn=24+Math.random()*12; G.flash=.6;
@@ -493,7 +493,9 @@ function update(dt){
   }
   else if(G.stuck) setCenter(`<div class="msg" style="font-size:26px">💨 ${micOK?'תנשפי על המסך!':'געי בכל מקום במסך'}</div>`
     +`<div class="lvl" style="letter-spacing:1px;margin-top:8px">הדאון טס לבד עכשיו — רק תנשפי</div>`);
-  else if(G.shakeAsk>0) setCenter(`<div class="msg" style="color:var(--gold)">🤝 שקשק!</div>`);
+  else if(G.shakeAsk>0) setCenter(`<div class="msg" style="color:var(--gold)">🤝 שקשק!</div>`
+    +`<div class="cnt" style="font-size:30px;letter-spacing:4px;color:var(--gold)">${Math.ceil(G.shakeAsk)}</div>`
+    +`<div class="lvl" style="letter-spacing:1px">יש לך זמן — נערי את הטלפון</div>`);
   else if(G.off>.8) setCenter(`<div class="msg" style="font-size:24px;color:var(--bad)">חזרי ל${G.t[6]}</div>`
     +`<div class="lvl" style="letter-spacing:1px;margin-top:8px">עוד ${(2.2-G.off).toFixed(1)} שנ׳ ותאבדי לב</div>`);
   else if(C.innerHTML) setCenter('');
