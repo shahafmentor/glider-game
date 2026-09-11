@@ -70,7 +70,7 @@
       <div class="tsub">↔️ <b>מזיזים את האגודלים ימינה/שמאלה לאורך המוט</b> — והדאון פונה לשם, כמו מוט של דאון אמיתי. משחררים והמוט חוזר למרכז.</div>
       <div class="tsub">📱 אפשר גם <b>להטות את הטלפון</b> — שתי השיטות עובדות יחד. צריך להישאר על המסלול שמתפתל מולך.</div>
       <div class="tsub">💨 נדבק לך משהו רע? <b>נושפים על המסך</b> כדי להעיף אותו.</div>
-      <div class="tsub">🤝 כשכתוב <b>"שקשק!"</b> — מנערים את הטלפון כדי לעבור פלטפורמה. רק כשכתוב.</div>
+      <div class="tsub">🤝 כשכתוב <b>"שקשק!"</b> — מנערים את הטלפון ומקבלים בונוס. מפספסים? לא קורה כלום.</div><div class="tsub">❤️ לב נעלם רק משני דברים: יציאה מהמסלול ליותר מ-2 שניות, או דבר רע שנדבק ולא נושפים אותו בזמן.</div>
       <div class="tsub">💰 מסיימים מסלול → מקבלים כסף → קונים את המסלול הבא.</div>
     </div>
     <div class="card" style="flex-direction:column;align-items:stretch">
@@ -443,11 +443,10 @@ function update(dt){
     G.x += (pathAt(G.dist,G.seed)-G.x)*Math.min(1,dt*2.2);
     G.off=0; G.noThumb=0;
   } else {
+    // יציאה מהמסלול היא הדבר היחיד שמוריד לב (חוץ מדבר רע שלא הספקת לנשוף)
     const err=Math.abs(pathAt(G.dist,G.seed)-G.x);
     G.off = err>pathW(G.dist)*.95 ? G.off+dt : 0;
-    if(G.off>1.7){ hit('יצאת מהמסלול'); G.off=0; }
-    if(HASTOUCH&&thumbs<2){ G.noThumb+=dt; if(G.noThumb>3.5){ hit('אגודלים על המוט!'); G.noThumb=0; } }
-    else G.noThumb=0;
+    if(G.off>2.2){ hit('יצאת מהמסלול'); G.off=0; }
   }
 
   // שקשוק
@@ -455,8 +454,10 @@ function update(dt){
   if(G.shakeIn<=0&&G.shakeAsk<=0){ G.shakeAsk=4; }
   if(G.shakeAsk>0){
     G.shakeAsk-=dt;
-    if(shakeFlag){ G.platform=(G.platform+1)%4; G.coins+=5; G.shakeAsk=0; G.shakeIn=24+Math.random()*12; G.flash=.6; }
-    else if(G.shakeAsk<=0){ hit('פספסת את השקשוק'); G.shakeIn=24+Math.random()*12; }
+    if(shakeFlag){ G.platform=(G.platform+1)%4; G.coins+=5; G.shakeAsk=0; G.shakeIn=24+Math.random()*12; G.flash=.6;
+                   note('פלטפורמה '+(G.platform+1)+' ✨ +5'); }
+    // החמצת שקשוק לא עולה בלב — פשוט מפספסים את הבונוס
+    else if(G.shakeAsk<=0){ note('פספסת את הבונוס — אין נזק'); G.shakeIn=24+Math.random()*12; }
   }
   shakeFlag=false;
 
@@ -486,16 +487,21 @@ function update(dt){
   $('hud-time').textContent=fmt(Math.max(0,G.time));
   $('hud-coins').textContent='🪙 '+G.coins;
 
-  // הודעות באמצע
-  if(G.stuck) setCenter(`<div class="msg" style="font-size:26px">💨 ${micOK?'תנשפי על המסך!':'געי בכל מקום במסך'}</div>`
+  // הודעות באמצע — הודעה על אובדן לב נשארת 2.5 שניות ולא נמחקת בפריים הבא
+  if(G.note&&G.note.t>0){ G.note.t-=dt;
+    setCenter(`<div class="msg" style="font-size:27px;color:${G.note.bad?'var(--bad)':'var(--gold)'}">${G.note.msg}</div>`);
+  }
+  else if(G.stuck) setCenter(`<div class="msg" style="font-size:26px">💨 ${micOK?'תנשפי על המסך!':'געי בכל מקום במסך'}</div>`
     +`<div class="lvl" style="letter-spacing:1px;margin-top:8px">הדאון טס לבד עכשיו — רק תנשפי</div>`);
   else if(G.shakeAsk>0) setCenter(`<div class="msg" style="color:var(--gold)">🤝 שקשק!</div>`);
-  else if(G.off>.7) setCenter(`<div class="msg" style="font-size:24px;color:var(--bad)">חזרי ל${G.t[6]}</div>`);
+  else if(G.off>.8) setCenter(`<div class="msg" style="font-size:24px;color:var(--bad)">חזרי ל${G.t[6]}</div>`
+    +`<div class="lvl" style="letter-spacing:1px;margin-top:8px">עוד ${(2.2-G.off).toFixed(1)} שנ׳ ותאבדי לב</div>`);
   else if(C.innerHTML) setCenter('');
 
   if(G.time<=0)finish(true); else if(G.hearts<=0)finish(false);
 }
-function hit(msg){ G.hearts--; G.flash=.5; setCenter(`<div class="msg" style="color:var(--bad)">💥 ${msg}</div>`); }
+function note(msg,bad){ G.note={msg,t:bad?2.6:1.4,bad}; }
+function hit(msg){ G.hearts--; G.flash=.5; note('💥 '+msg+' · נשארו '+G.hearts+' לבבות',true); }
 
 /* ===== ציור: מבט מגוף ראשון דרך שלד הדאון =====
    הקרקע נבנית שורה-שורה בפרספקטיבה אמיתית: לכל שורת פיקסלים מחושב העומק שלה בעולם,
@@ -665,6 +671,20 @@ function drawFrame(W,H){
   cx.beginPath(); cx.moveTo(apex[0],apex[1]); cx.lineTo(rt[0],rt[1]); cx.stroke();
   cx.strokeStyle='#55506a'; cx.lineWidth=t*.35;
   cx.beginPath(); cx.moveTo(apex[0]-2,apex[1]); cx.lineTo(lf[0]+6,lf[1]); cx.stroke();
+  /* מד מיקום: איפה מרכז המסלול ביחס אלייך. הקו הלבן במרכז זה את,
+     המשולש זה המסלול. כשהמשולש בתוך הירוק — את עליו.                */
+  if(G.phase==='play'||G.phase==='pause'){
+    const gy=H*.775, gw=W*.30, err=pathAt(G.dist,G.seed)-G.x, lim=pathW(G.dist);
+    const onPath=Math.abs(err)<=lim*.95;
+    cx.fillStyle='#00000055'; cx.beginPath(); cx.roundRect(W/2-gw,gy-7,gw*2,14,7); cx.fill();
+    cx.fillStyle=onPath?'#22e06a44':'#ff5d7a33';                    // אזור בטוח
+    cx.fillRect(W/2-gw*(lim/2.6),gy-6,gw*2*(lim/2.6),12);
+    const mx=W/2+Math.max(-1,Math.min(1,err/2.6))*gw;
+    cx.fillStyle=onPath?'#22e06a':'#ff5d7a';
+    cx.beginPath(); cx.moveTo(mx,gy+8); cx.lineTo(mx-8,gy-8); cx.lineTo(mx+8,gy-8); cx.closePath(); cx.fill();
+    cx.fillStyle='#ffffff'; cx.fillRect(W/2-1.5,gy-12,3,24);         // את
+  }
+
   // מוט אחיזה אופקי — נע ומתנדנד לפי האגודלים
   const by=H*.845, bh=Math.max(24,H*.038);
   const sh=Math.max(-W*.11,Math.min(W*.11,padPx)), rot=steerPad*.085;
