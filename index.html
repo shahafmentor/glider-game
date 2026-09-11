@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>דאון — 40 מסלולים</title>
+<style>
+  :root{--bg:#07060f;--panel:#141224;--line:#2b2748;--txt:#f0ecff;--dim:#9d95c2;
+        --gold:#ffd257;--neon:#c084ff;--accent:#6ee7ff;--bad:#ff5d7a}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;color:var(--txt);
+    font-family:-apple-system,"Segoe UI",Rubik,Arial,sans-serif;user-select:none;overscroll-behavior:none}
+  .screen{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}
+  .screen.on{display:flex}
+  header{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);background:var(--panel)}
+  h1{font-size:19px;margin:0;flex:1}
+  .money{background:#2a2208;border:1px solid #6b5714;color:var(--gold);padding:6px 12px;border-radius:999px;font-weight:800;font-size:15px}
+  .scroll{flex:1;overflow-y:auto;padding:12px 14px 30px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+  .card.locked{opacity:.5}
+  .em{font-size:26px;width:38px;text-align:center}
+  .info{flex:1;min-width:0}
+  .tname{font-weight:800;font-size:15px}
+  .tsub{font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.5}
+  button{font-family:inherit;font-size:14px;font-weight:800;border:0;border-radius:11px;padding:10px 15px;cursor:pointer;
+    background:linear-gradient(135deg,var(--neon),#7c5cff);color:#fff}
+  button.ghost{background:#232043;color:var(--txt);border:1px solid var(--line)}
+  button:disabled{opacity:.4}
+  .big{width:100%;padding:16px;font-size:17px;border-radius:14px}
+  .row{display:flex;gap:8px}
+  #canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #scr-game{background:#000}
+  .hud{position:absolute;top:0;left:0;right:0;padding:12px 16px;display:flex;gap:8px;align-items:center;
+    font-size:13px;font-weight:800;pointer-events:none;z-index:3}
+  .pill{background:#000000a6;border:1px solid #ffffff26;border-radius:999px;padding:5px 10px;backdrop-filter:blur(4px)}
+  .center{position:absolute;left:0;right:0;top:26%;text-align:center;pointer-events:none;z-index:4;padding:0 26px}
+  .lvl{color:var(--neon);font-weight:900;font-size:17px;letter-spacing:3px;text-shadow:0 0 14px #c084ff90}
+  .msg{font-size:30px;font-weight:900;line-height:1.25;margin-top:6px;text-shadow:0 3px 18px #000,0 0 24px #ffffff40}
+  .cnt{font-size:44px;font-weight:900;margin-top:6px;letter-spacing:10px;text-shadow:0 0 20px #fff6}
+  .fact{position:absolute;bottom:12px;left:14px;right:14px;background:#0a0818cc;border:1px solid #ffffff1f;
+    border-radius:12px;padding:9px 12px;font-size:12.5px;line-height:1.45;z-index:3;pointer-events:none}
+  .modal{position:fixed;inset:0;background:#04030be8;display:none;align-items:center;justify-content:center;padding:22px;z-index:9}
+  .modal.on{display:flex}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;max-width:420px;width:100%;text-align:center}
+  .box h2{margin:0 0 8px;font-size:23px}
+  .box p{color:var(--dim);font-size:14px;line-height:1.6;margin:6px 0 16px}
+  .blowbtn{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);background:#ffffff1f;border:1px solid #fff5;
+    color:#fff;border-radius:999px;padding:12px 24px;font-size:15px;display:none;z-index:5}
+  .blowbtn.on{display:block}
+  .pausebtn{position:absolute;top:52px;left:14px;width:46px;height:46px;border-radius:50%;z-index:7;
+    background:#000000a6;border:1px solid #ffffff3d;color:#fff;font-size:17px;padding:0;
+    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .note{font-size:12px;color:var(--dim);text-align:center;padding:14px 10px 0;line-height:1.6}
+  .tick{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:6;pointer-events:none}
+  .tick.on{display:flex}
+  .tick div{width:150px;height:150px;border-radius:50%;background:#22e06a;display:flex;align-items:center;justify-content:center;
+    font-size:82px;color:#fff;box-shadow:0 0 60px #22e06a90;animation:pop .35s ease-out}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+
+<!-- פתיחה -->
+<div class="screen on" id="scr-intro">
+  <header><h1>🪂 דאון — 40 מסלולים</h1></header>
+  <div class="scroll">
+    <div class="card" style="flex-direction:column;align-items:stretch">
+      <div class="tname">איך משחקים</div>
+      <div class="tsub">👍 שתי הידיים מחזיקות את הטלפון, <b>שני האגודלים על המוט הלבן</b> בתחתית — כמו שמחזיקים דאון אמיתי.</div>
+      <div class="tsub">📱 <b>מטים את הטלפון</b> ימינה/שמאלה כדי לנווט. צריך להישאר על המסלול שמתפתל מולך.</div>
+      <div class="tsub">💨 נדבק לך משהו רע? <b>נושפים על המסך</b> כדי להעיף אותו.</div>
+      <div class="tsub">🤝 כשכתוב <b>"שקשק!"</b> — מנערים את הטלפון כדי לעבור פלטפורמה. רק כשכתוב.</div>
+      <div class="tsub">💰 מסיימים מסלול → מקבלים כסף → קונים את המסלול הבא.</div>
+    </div>
+    <div class="card" style="flex-direction:column;align-items:stretch">
+      <div class="tname">אורך שלב</div>
+      <div class="row" style="margin-top:10px">
+        <button class="ghost" id="dur-short" style="flex:1">מהיר · 60 שנ׳</button>
+        <button id="dur-long" style="flex:1">מלא · 4 דק׳</button>
+      </div>
+      <div class="tsub" id="dur-lbl"></div>
+    </div>
+    <button class="big" id="start">התחלה — הפעלת חיישנים</button>
+    <div class="note">יופיעו בקשות לאשר חיישני תנועה ומיקרופון. בלי מיקרופון — במקום נשיפה פשוט נוגעים בכל מקום במסך.<br>במחשב: חצים לניווט · B נשיפה · S שקשוק.</div>
+  </div>
+</div>
+
+<!-- מפה -->
+<div class="screen" id="scr-map">
+  <header><h1>המסלולים שלי</h1><div class="money" id="money">0 ₪</div></header>
+  <div class="scroll" id="list"></div>
+</div>
+
+<!-- משחק -->
+<div class="screen" id="scr-game">
+  <canvas id="canvas"></canvas>
+  <div class="hud">
+    <div class="pill" id="hud-hearts">❤️❤️❤️</div>
+    <div class="pill" id="hud-time">4:00</div>
+    <div class="pill" id="hud-coins">🪙 0</div>
+    <div class="pill" id="hud-name">—</div>
+  </div>
+  <div class="center" id="center"></div>
+  <div class="fact" id="fact"></div>
+  <button class="blowbtn" id="blowbtn">💨 נשיפה</button>
+  <button class="pausebtn" id="pausebtn" aria-label="עצירה">⏸</button>
+  <div class="tick" id="tick"><div>✓</div></div>
+</div>
+
+<!-- עצירה -->
+<div class="modal" id="pmodal"><div class="box">
+  <h2>עצור ⏸</h2><p id="p-body"></p>
+  <button class="big" id="p-resume">חזרה למשחק</button><div style="height:8px"></div>
+  <button class="big ghost" id="p-restart">להתחיל את המסלול מחדש</button><div style="height:8px"></div>
+  <button class="big ghost" id="p-quit">יציאה לרשימת המסלולים</button>
+</div></div>
+
+<!-- סיום -->
+<div class="modal" id="modal"><div class="box">
+  <h2 id="m-title"></h2><p id="m-body"></p>
+  <button class="big" id="m-again">שוב</button><div style="height:8px"></div>
+  <button class="big ghost" id="m-map">חזרה למסלולים</button>
+</div></div>
+
+<script>
+/* ===== 40 מסלולים: [שם, אייקון, טובים(3), רעים(2), [שמיים], עובדה, שם המסלול לניווט] ===== */
+const T = [
+["מערכת השמש","🪐",["⭐","🚀","🌕"],["☄️","🛸"],["#1b0a3e","#5a2a9e"],"השמש מהווה 99.8% מכל המסה של מערכת השמש.","שביל הכוכבים"],
+["גוף האדם","🫀",["🫁","🧠","🦴"],["🦠","🚬"],["#3d0a22","#c0325e"],"בגוף בוגר יש כ‑206 עצמות — תינוק נולד עם כ‑300.","זרם הדם"],
+["הסוואנה","🦁",["🦓","🐘","🌿"],["🔥","🪤"],["#4a2f06","#e0a83a"],"לג'ירף ולאדם יש בדיוק 7 חוליות בצוואר.","שביל העדר"],
+["מעמקי האוקיינוס","🐋",["🐠","🐙","🐚"],["🛢️","🧴"],["#02182f","#0e7fb8"],"יותר מ‑80% מהאוקיינוס עדיין לא מופה.","הזרם הקר"],
+["יער הגשם","🦜",["🐒","🌺","🦋"],["🪓","🔥"],["#04220f","#1fa055"],"האמזונס מייצר כחמישית מהחמצן היבשתי.","הנהר הירוק"],
+["מיחזור","♻️",["🧃","📦","🍾"],["🗑️","🛍️"],["#062b1c","#2fb377"],"בקבוק זכוכית מתפרק בטבע כמיליון שנה.","פס המיון"],
+["פירות וירקות","🍎",["🍓","🥕","🥑"],["🍭","🍟"],["#33081a","#c73b60"],"עגבנייה היא מבחינה בוטנית פרי, לא ירק.","שביל המטע"],
+["מזג אוויר","⛈️",["🌈","☀️","❄️"],["🌪️","⚡"],["#101a3c","#4f74c9"],"ברק חם פי חמישה מפני השמש.","עין הסערה"],
+["דינוזאורים","🦕",["🦖","🥚","🌋"],["☄️","🦴"],["#2c1706","#a05e17"],"הטירנוזאורוס חי קרוב יותר בזמן אלינו מאשר לסטגוזאורוס.","נחל הביצה"],
+["חרקים","🐝",["🐞","🦋","🐜"],["🕷️","🦟"],["#152605","#78b31d"],"נמלה סוחבת פי 50 ממשקל גופה.","שביל הכוורת"],
+["מצרים העתיקה","🔺",["🐫","📜","🏺"],["🐍","🦂"],["#3a2a04","#e0bb2e"],"פירמידת גיזה נבנתה מכ‑2.3 מיליון אבנים.","הנילוס"],
+["ימי הביניים","🏰",["🛡️","⚔️","👑"],["🐉","🏹"],["#1a1630","#5a5a92"],"אביר בשריון מלא נשא כ‑25 ק\"ג ציוד.","דרך הטירה"],
+["ויקינגים","⛵",["🪓","🧭","🐟"],["🌊","🧊"],["#061a2b","#2f7fa8"],"הוויקינגים הגיעו לאמריקה 500 שנה לפני קולומבוס.","הפיורד"],
+["יוון העתיקה","🏛️",["📚","🏺","🫒"],["🌩️","🐙"],["#0d1c33","#4082c4"],"האולימפיאדה הראשונה נערכה ב‑776 לפנה\"ס.","שביל האולימפוס"],
+["מוזיקה","🎸",["🎹","🥁","🎺"],["📢","🔇"],["#2c0533","#a52fb8"],"פסנתר מכיל בערך 230 מיתרים.","קו המנגינה"],
+["אולימפיאדה","🏅",["🏊","⚽","🏀"],["🤕","⏱️"],["#071c3e","#2f7ce0"],"הטבעות מייצגות חמש יבשות מיושבות.","מסלול הריצה"],
+["אוכל מהעולם","🍜",["🍕","🌮","🍣"],["🌶️","🧊"],["#310f04","#cc6222"],"פיצה מרגריטה נקראה ע\"ש מלכת איטליה, 1889.","נתיב התבלינים"],
+["ישראל","🫒",["🍊","🏜️","🕍"],["🌡️","🌵"],["#062a3d","#2fa4cc"],"ים המלח הוא הנקודה היבשתית הנמוכה בעולם.","שביל ישראל"],
+["חורף ושלג","☃️",["❄️","🧣","🐧"],["🧊","🌬️"],["#0a2740","#8ecbe8"],"אין שני פתיתי שלג זהים.","מגלשת הקרח"],
+["מדבר","🐪",["🌵","🦎","🏜️"],["🦂","🌡️"],["#3d2504","#e8b447"],"הסהרה גדול בערך כמו ארצות הברית כולה.","שיירת הגמלים"],
+["הרים וטיפוס","⛰️",["🧗","🎒","🦅"],["🪨","🌨️"],["#101728","#61789c"],"האוורסט גדל כ‑4 מ\"מ בשנה.","הרכס"],
+["עיר גדולה","🌃",["🚕","🏙️","🚦"],["🚧","💨"],["#0a0a1c","#4a3f8c"],"טוקיו היא האזור העירוני המאוכלס בעולם.","שדרת הניאון"],
+["חוות בעלי חיים","🐄",["🐑","🐔","🌾"],["🐺","🌩️"],["#1b2705","#8aad2f"],"פרה מייצרת כ‑30 ליטר חלב ביום.","תלם השדה"],
+["ציפורים","🦅",["🕊️","🦉","🪶"],["🪁","🌪️"],["#0b1c30","#4f9bc4"],"נחליאלי קטן חוצה יבשות במסע של אלפי ק\"מ.","נתיב הנדידה"],
+["שוניות אלמוגים","🪸",["🐡","🐢","🦐"],["🦈","🛢️"],["#031f2e","#0fa0b5"],"שונית המחסום הגדולה נראית גם מהחלל.","תעלת השונית"],
+["גלקסיות","🌌",["✨","🌠","🔭"],["🕳️","☄️"],["#050218","#4a1f8c"],"בשביל החלב יש יותר מ‑100 מיליארד כוכבים.","זרוע הגלקסיה"],
+["רובוטים","🤖",["⚙️","🔋","💡"],["⚡","🧲"],["#07211f","#2f9c96"],"המילה 'רובוט' הגיעה ממחזה צ'כי מ‑1920.","פס הייצור"],
+["אנרגיה מתחדשת","🌬️",["☀️","💧","🔋"],["🛢️","💨"],["#062a2c","#2fc0a0"],"טורבינת רוח אחת מספיקה חשמל לאלפי בתים.","שדה הרוח"],
+["מחזור המים","💧",["☁️","🌊","🌧️"],["🏭","🧴"],["#062033","#3f9ae0"],"רק כ‑1% מהמים על כדור הארץ זמינים לשתייה.","הנהר"],
+["הרי געש","🌋",["🪨","🔥","🧭"],["💨","🌫️"],["#2c0705","#c2431f"],"יש כ‑1,500 הרי געש פעילים בעולם.","נחל הלבה"],
+["קרקס","🎪",["🤹","🎈","🦁"],["🔥","🪤"],["#2c0722","#c02f80"],"לליצנים מקצועיים יש איפור פנים רשום כסימן היכר.","חבל הלוליין"],
+["פיראטים","🏴‍☠️",["💰","🗺️","🦜"],["🦈","⚓"],["#0b1220","#41689c"],"רוב הפיראטים לא קברו אוצרות — הם בזבזו אותם מהר.","נתיב הספינה"],
+["דרקונים ואגדות","🐉",["🗡️","💎","🧙"],["🔥","👹"],["#1c0630","#7c2fc0"],"סיפורי דרקונים מופיעים בתרבויות שלא נפגשו מעולם.","מעוף הדרקון"],
+["חגי ישראל","🕎",["🍯","🎭","🥁"],["🌧️","💨"],["#2c2004","#dfa32f"],"בשנה מעוברת בלוח העברי יש חודש אדר נוסף.","לוח השנה"],
+["בית ספר","🎒",["📚","✏️","🔬"],["⏰","📉"],["#0a1c2e","#3f8ac4"],"בתי ספר לכתיבה פעלו בשומר לפני 5,000 שנה.","מסדרון הכיתות"],
+["אמנות","🎨",["🖌️","🖼️","🌈"],["🩹","🖍️"],["#2b062b","#a52fa5"],"ואן גוך מכר בחייו מעט מאוד ציורים.","משיחת המכחול"],
+["רפואה","🩺",["💊","🩹","🧬"],["🦠","🤒"],["#062b24","#2fb59c"],"החיסון הראשון פותח נגד אבעבועות שחורות ב‑1796.","עורק הריפוי"],
+["תחבורה","🚄",["✈️","🚲","🚢"],["🚧","⛽"],["#0a1a30","#3f7cc4"],"רכבת מגלית ביפן עברה 600 קמ\"ש בניסויים.","המסילה"],
+["מתחת לאדמה","🕳️",["💎","🦇","🪨"],["🕷️","🌫️"],["#08080f","#494960"],"מערות קרסט נוצרות ממים שממיסים סלע גיר.","הנהר התת־קרקעי"],
+["העתיד","🛸",["🧬","🛰️","🔮"],["⚠️","🕳️"],["#03101f","#1f6ec0"],"תחנת החלל הבינלאומית מקיפה את כדור הארץ כל 90 דקות.","נתיב האור"],
+];
+
+/* ===== פלטת קרקע לכל מסלול: [קרקע כהה, קרקע בהירה, מסלול כהה, מסלול בהיר, סוג] =====
+   סוג: w=מים זורמים · l=לבה · n=ניאון · g=קרקע/שביל                                  */
+const PAL = [
+["#2a1b4d","#241646","#6f5bd0","#8f7bf0","n"], ["#5e1430","#55122b","#c2334f","#e0475f","w"],
+["#8a6b24","#7d611f","#a0542a","#bd6e3d","g"], ["#063a5c","#05324f","#0e7fa8","#14a0c8","w"],
+["#12522a","#0f4724","#1f7a8c","#2fa3b5","w"], ["#1d5c42","#19513a","#3a7ac4","#4c95d8","g"],
+["#6b2033","#5e1b2c","#c2415e","#d9536f","g"], ["#2a3a63","#243456","#5a7fc4","#7396d8","w"],
+["#6b3f14","#5e3711","#2f7a5e","#3fa07a","w"], ["#3f5c10","#37500e","#c99a2a","#e0b53f","g"],
+["#8a6f1c","#7d6418","#2a7fa8","#36a0c8","w"], ["#33304f","#2c2a45","#8a86a8","#a8a3c4","g"],
+["#10344a","#0d2c40","#1f6f96","#2a8cb4","w"], ["#1e3a5c","#1a3350","#4a7fb5","#5e96cc","w"],
+["#4a1550","#411246","#9e3aae","#b84ec8","n"], ["#1a3f70","#163663","#c25a2a","#d96f3a","g"],
+["#5e2410","#52200e","#b85a24","#d06e33","g"], ["#1a4a5e","#164052","#3aa0c2","#4ab8d6","w"],
+["#4a6e8a","#42627c","#cfe6f5","#e8f4ff","w"], ["#8a6420","#7d5a1c","#d9a441","#e8b756","g"],
+["#2e3a4e","#283344","#b8c4d6","#dfe8f5","g"], ["#1a1a33","#16162c","#4a3f8c","#5e52a8","n"],
+["#4a5c14","#425211","#a8763a","#c4914f","g"], ["#1e3f5c","#1a3750","#4a8fb5","#5ea6cc","w"],
+["#05404f","#043744","#0fa0b5","#18bcd0","w"], ["#241442","#1f1139","#6a3ab5","#8250cc","n"],
+["#12403c","#0f3733","#2f9c96","#3db5ae","n"], ["#0f4a44","#0d413c","#2fc0a0","#3ed8b5","g"],
+["#0e3a56","#0c324a","#3a9ae0","#4fb0f0","w"], ["#4a1410","#40110d","#c2431f","#e85c28","l"],
+["#4a1238","#400f30","#c02f80","#d84496","n"], ["#16243a","#131f33","#41689c","#527eb5","w"],
+["#331050","#2c0d45","#7c2fc0","#9245d6","n"], ["#4a3610","#402f0d","#dfa32f","#f0b843","g"],
+["#16334a","#132c40","#3f8ac4","#4fa0d8","g"], ["#4a124a","#400f40","#a52fa5","#bc44bc","n"],
+["#0f4a3e","#0d4036","#2fb59c","#3ecfb2","w"], ["#16283f","#132236","#3f7cc4","#4f92d8","g"],
+["#1a1a22","#16161e","#3a6a8a","#52a0c4","w"], ["#0a2438","#081e30","#1f6ec0","#2a88e0","n"],
+];
+
+/* ===== כלכלה: מסלול 1 = 5 ₪, כל מסלול עולה 5 סיבובים של הקודם ===== */
+const reward=n=>Math.round(5*Math.pow(1.22,n-1));
+const cost=n=>n<=1?0:reward(n-1)*5;
+
+/* ===== שמירה ===== */
+const KEY='glider40';
+let S={money:0,owned:[1],done:{},dur:240};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+
+const $=id=>document.getElementById(id);
+const show=id=>document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+const HASTOUCH='ontouchstart' in window;
+
+/* ===== חיישנים ===== */
+let tilt=0,tiltZero=null,shakeFlag=false,blowLevel=0,micOK=false,thumbs=0,dragX=null;
+function onOrient(e){ if(e.gamma==null)return; if(tiltZero===null)tiltZero=e.gamma; tilt=e.gamma-tiltZero; }
+let lastMag=0;
+function onMotion(e){ const a=e.accelerationIncludingGravity; if(!a)return;
+  const m=Math.hypot(a.x||0,a.y||0,a.z||0); if(Math.abs(m-lastMag)>13)shakeFlag=true; lastMag=m; }
+async function initSensors(){
+  try{ if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)await DeviceOrientationEvent.requestPermission();
+       if(window.DeviceMotionEvent&&DeviceMotionEvent.requestPermission)await DeviceMotionEvent.requestPermission(); }catch(e){}
+  addEventListener('deviceorientation',onOrient); addEventListener('devicemotion',onMotion);
+  try{
+    const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const ctx=new (window.AudioContext||window.webkitAudioContext)(); await ctx.resume();
+    const an=ctx.createAnalyser(); an.fftSize=512; ctx.createMediaStreamSource(st).connect(an);
+    const buf=new Uint8Array(an.frequencyBinCount); micOK=true;
+    (function l(){ an.getByteFrequencyData(buf); let s=0; for(let i=1;i<10;i++)s+=buf[i];
+                   blowLevel=s/9/255; requestAnimationFrame(l); })();
+  }catch(e){ micOK=false; }
+  $('blowbtn').classList.toggle('on',!micOK);
+}
+addEventListener('keydown',e=>{ if(e.key==='ArrowLeft')tilt-=7; if(e.key==='ArrowRight')tilt+=7;
+  if(e.key.toLowerCase()==='b')blowLevel=1; if(e.key.toLowerCase()==='s')shakeFlag=true; });
+addEventListener('keyup',e=>{ if(e.key.toLowerCase()==='b')blowLevel=0; });
+const bb=$('blowbtn');
+bb.addEventListener('touchstart',e=>{e.preventDefault();blowLevel=1},{passive:false});
+bb.addEventListener('touchend',e=>{e.preventDefault();blowLevel=0},{passive:false});
+bb.addEventListener('mousedown',()=>blowLevel=1); addEventListener('mouseup',()=>{if(!micOK)blowLevel=0});
+
+/* ===== מפה ===== */
+function renderMap(){
+  $('money').textContent=S.money+' ₪'; const L=$('list'); L.innerHTML='';
+  T.forEach((t,i)=>{
+    const n=i+1,owned=S.owned.includes(n),c=cost(n),p=S.done[n]||0;
+    const d=document.createElement('div'); d.className='card'+(owned?'':' locked');
+    d.innerHTML=`<div class="em">${t[1]}</div><div class="info"><div class="tname">${n}. ${t[0]}</div>
+      <div class="tsub">${owned?`שכר: ${reward(n)} ₪ · הושלם ${p} פעמים`:`מחיר: ${c} ₪`}</div></div>`;
+    const b=document.createElement('button');
+    if(owned){ b.textContent='שחק'; b.onclick=()=>startLevel(n); }
+    else{ b.textContent='קנה'; b.className='ghost'; b.disabled=S.money<c;
+          b.onclick=()=>{ if(S.money>=c){S.money-=c;S.owned.push(n);save();renderMap();} }; }
+    d.appendChild(b); L.appendChild(d);
+  });
+}
+
+/* ===== משחק ===== */
+const cv=$('canvas'),cx=cv.getContext('2d');
+let G=null,raf=0;
+function fit(){ const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);
+  cv.width=r.width*d; cv.height=r.height*d; cx.setTransform(d,0,0,d,0,0); if(G){G.W=r.width;G.H=r.height;} }
+addEventListener('resize',fit);
+
+/* אגודלים על המוט + גרירה כגיבוי */
+function padHit(x,y,W,H){ const by=H*.845,r=Math.min(64,W*.19);
+  return (Math.hypot(x-W*.27,y-by)<r)||(Math.hypot(x-W*.73,y-by)<r); }
+cv.addEventListener('touchstart',e=>{ const r=cv.getBoundingClientRect(); let c=0;
+  for(const t of e.touches) if(padHit(t.clientX-r.left,t.clientY-r.top,r.width,r.height))c++;
+  thumbs=c; dragX=e.touches[0].clientX;
+  // כשמשהו נדבק ואין מיקרופון — נגיעה בכל מקום במסך היא נשיפה
+  if(!micOK&&G&&G.stuck) blowLevel=1; },{passive:true});
+cv.addEventListener('touchmove',e=>{ const r=cv.getBoundingClientRect(); let c=0;
+  for(const t of e.touches) if(padHit(t.clientX-r.left,t.clientY-r.top,r.width,r.height))c++;
+  thumbs=c;
+  if(dragX!=null&&!c){ tilt+=(e.touches[0].clientX-dragX)*.4; dragX=e.touches[0].clientX; } },{passive:true});
+cv.addEventListener('touchend',e=>{ const r=cv.getBoundingClientRect(); let c=0;
+  for(const t of e.touches) if(padHit(t.clientX-r.left,t.clientY-r.top,r.width,r.height))c++;
+  thumbs=c; if(!e.touches.length){ dragX=null; if(!micOK)blowLevel=0; } },{passive:true});
+
+/* ---- עולם ביחידות מרחק אמיתיות ---- */
+const HW=1.0;                                            // חצי רוחב המסלול ביחידות עולם
+const pathAt=(d,n)=>Math.sin(d*.047+n)*1.25+Math.sin(d*.019+n*2.3)*.85+Math.sin(d*.0083+n*.7)*.5;
+const pathW =(d)=>HW*(1+.22*Math.sin(d*.061)+.12*Math.sin(d*.017+2));   // רוחב משתנה — לא פס אחיד
+const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+const mix=(a,b,t)=>`rgb(${a[0]+(b[0]-a[0])*t|0},${a[1]+(b[1]-a[1])*t|0},${a[2]+(b[2]-a[2])*t|0})`;
+const FOG=14;                                            // מדרגות ערפל מחושבות מראש
+
+function buildPalette(n){
+  const p=PAL[n-1], sky=hex(T[n-1][4][1]);
+  const cols=[p[0],p[1],p[2],p[3],'#ffffff'].map(hex);
+  const tbl=cols.map(c=>{ const a=[]; for(let i=0;i<FOG;i++)a.push(mix(c,sky,i/(FOG-1)*.92)); return a; });
+  const dk=cols[0].map(v=>v*.45|0), lt=cols[1].map((v,i)=>v*.62+40|0);   // צלליות שטח בצידי הדרך
+  const sil=[dk,lt].map(c=>{ const a=[]; for(let i=0;i<FOG;i++)a.push(mix(c,sky,i/(FOG-1)*.92)); return a; });
+  return {g1:tbl[0],g2:tbl[1],p1:tbl[2],p2:tbl[3],ed:tbl[4],type:p[4],raw:cols,sil:sil[0],sil2:sil[1]};
+}
+
+/* ---- מפת שטח: טקסטורה שנתפרת מלמעלה ונמתחת על הקרקע בפרספקטיבה ----
+   TW = כמה יחידות עולם מכסה אריח אחד. הטקסטורה נבנית פעם אחת לכל מסלול.  */
+const TW=12, TPX=512;
+const rnd=s=>()=>((s=s*1664525+1013904223|0)>>>8)/16777216;   // רנדום דטרמיניסטי
+function buildTerrain(n,pal){
+  const cv2=document.createElement('canvas'); cv2.width=cv2.height=TPX;
+  const c2=cv2.getContext('2d'), R=rnd(n*7919+13), [g1,g2]=pal.raw;
+  const dark=mix(g1,[0,0,0],.35), light=mix(g2,[255,255,255],.16), mid=mix(g1,g2,.5);
+  c2.fillStyle=mix(g1,g2,.5); c2.fillRect(0,0,TPX,TPX);
+  const blob=(x,y,r,col,a)=>{ c2.globalAlpha=a; c2.fillStyle=col;
+    for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
+      const X=x+ox*TPX,Y=y+oy*TPX; if(X<-r||X>TPX+r||Y<-r||Y>TPX+r)continue;
+      c2.beginPath(); c2.ellipse(X,Y,r,r*(.55+R()*.9),R()*3,0,7); c2.fill(); } };
+  for(let i=0;i<70;i++) blob(R()*TPX,R()*TPX,40+R()*110,R()<.5?g1:g2,.55);   // כתמי שטח גדולים
+  for(let i=0;i<160;i++)blob(R()*TPX,R()*TPX,12+R()*40, R()<.5?light:dark,.35); // שיחים/סלעים
+  for(let i=0;i<420;i++)blob(R()*TPX,R()*TPX,2+R()*7,  R()<.6?dark:light,.5);   // גרעיניות
+  c2.globalAlpha=.18; c2.fillStyle=mid;                                         // סדקים/נחלים קטנים
+  for(let i=0;i<26;i++){ const x=R()*TPX,y=R()*TPX,l=30+R()*90,a=R()*6;
+    c2.save(); c2.translate(x,y); c2.rotate(a); c2.fillRect(-l/2,-1.5,l,3); c2.restore(); }
+  c2.globalAlpha=1;
+  return cv2;
+}
+
+/* ---- טקסטורת המסלול עצמו: נמתחת לרוחבו, ונעה לאורכו ----
+   RW = רוחב הטקסטורה (רוחב המסלול), RV = כמה יחידות עולם מכסה אריח לאורך.  */
+const RW=128, RH=512, RV=7;
+function buildPathTex(n,pal){
+  const cv2=document.createElement('canvas'); cv2.width=RW; cv2.height=RH;
+  const c2=cv2.getContext('2d'), R=rnd(n*104729+7), ty=pal.type;
+  const [,,c1,c2c]=pal.raw, deep=mix(c1,[0,0,0],.4), foam=mix(c2c,[255,255,255],.55);
+  // בסיס: כהה בשוליים, בהיר במרכז — נותן נפח לערוץ
+  const g=c2.createLinearGradient(0,0,RW,0);
+  g.addColorStop(0,mix(c1,[0,0,0],.25)); g.addColorStop(.18,mix(c1,c2c,.35));
+  g.addColorStop(.5,mix(c2c,[255,255,255],.06)); g.addColorStop(.82,mix(c1,c2c,.35));
+  g.addColorStop(1,mix(c1,[0,0,0],.25));
+  c2.fillStyle=g; c2.fillRect(0,0,RW,RH);
+  const rep=(f)=>{ for(let o=-1;o<=1;o++){ c2.save(); c2.translate(0,o*RH); f(); c2.restore(); } };
+  if(ty==='w'){                                   // מים: אדוות + קצף בגדות
+    for(let i=0;i<150;i++){ const x=R()*RW,y=R()*RH,w=14+R()*46,h=1.5+R()*3.5;
+      rep(()=>{ c2.globalAlpha=.10+R()*.16; c2.fillStyle=R()<.62?foam:deep;
+        c2.beginPath(); c2.ellipse(x,y,w/2,h/2,0,0,7); c2.fill(); }); }
+    for(let i=0;i<90;i++){ const s=R()<.5, x=s?R()*13:RW-R()*13, y=R()*RH;
+      rep(()=>{ c2.globalAlpha=.16+R()*.3; c2.fillStyle=foam;
+        c2.beginPath(); c2.ellipse(x,y,4+R()*7,1.5+R()*3,0,0,7); c2.fill(); }); }
+  } else if(ty==='l'){                             // לבה: סדקים זוהרים
+    for(let i=0;i<80;i++){ const x=R()*RW,y=R()*RH;
+      rep(()=>{ c2.globalAlpha=.2+R()*.45; c2.fillStyle=R()<.5?foam:deep;
+        c2.fillRect(x,y,2+R()*5,8+R()*40); }); }
+  } else if(ty==='n'){                             // ניאון: פסי אור לאורך
+    for(let i=0;i<26;i++){ const x=R()*RW;
+      rep(()=>{ c2.globalAlpha=.08+R()*.2; c2.fillStyle=foam; c2.fillRect(x,0,1+R()*4,RH); }); }
+    rep(()=>{ c2.globalAlpha=.3; c2.fillStyle=foam; c2.fillRect(RW/2-2,0,4,RH); });
+  } else {                                         // שביל: חצץ ואבנים
+    for(let i=0;i<420;i++){ const x=R()*RW,y=R()*RH;
+      rep(()=>{ c2.globalAlpha=.12+R()*.3; c2.fillStyle=R()<.5?deep:foam;
+        c2.beginPath(); c2.ellipse(x,y,1+R()*4,1+R()*3,R()*3,0,7); c2.fill(); }); }
+  }
+  // קצוות רכים
+  c2.globalAlpha=.5; c2.fillStyle=deep; c2.fillRect(0,0,2,RH); c2.fillRect(RW-2,0,2,RH);
+  c2.globalAlpha=1;
+  return cv2;
+}
+
+function startLevel(n){
+  const t=T[n-1],r=cv.getBoundingClientRect();
+  tiltZero=null; blowLevel=0; shakeFlag=false; thumbs=0;
+  const pal=buildPalette(n);
+  G={n,t,W:r.width||innerWidth,H:r.height||innerHeight,seed:n*1.7,pal,tex:buildTerrain(n,pal),ptex:buildPathTex(n,pal),
+     x:0, dist:0, hearts:3, coins:0, items:[], stars:[], dust:[], clock:0,
+     time:S.dur, last:performance.now(), speed:11+n*.35, spawn:1.2,
+     stuck:null, platform:0, shakeAsk:0, shakeIn:24+Math.random()*10,
+     phase:'intro', pt:3.4, off:0, noThumb:0, flash:0};
+  for(let i=0;i<70;i++)G.stars.push({x:Math.random(),y:Math.random(),s:Math.random()});
+  for(let i=0;i<34;i++)G.dust.push({z:2+Math.random()*26,wx:(Math.random()-.5)*5,h:.3+Math.random()*.9});
+  $('hud-name').textContent=t[0]; $('fact').textContent='💡 '+t[5];
+  $('tick').classList.remove('on');
+  show('scr-game'); fit(); cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+
+function loop(now){ const dt=Math.min(.05,(now-G.last)/1000); G.last=now;
+  if(G.phase!=='pause') update(dt);
+  draw(); raf=requestAnimationFrame(loop); }
+
+/* ===== עצירה =====
+   הזמן, התנועה והחיישנים קופאים. אפשר לעצור בכל רגע ולחזור בדיוק לאותה נקודה. */
+function setPause(on){
+  if(!G||G.phase==='done')return;
+  if(on&&G.phase!=='pause'){
+    G.back=G.phase; G.phase='pause'; tilt=0; blowLevel=0;
+    $('p-body').innerHTML=`${G.t[1]} ${G.t[0]} · נשאר ${fmt(Math.max(0,G.time))} · 🪙 ${G.coins}`;
+    $('pmodal').classList.add('on'); $('pausebtn').textContent='▶';
+  } else if(!on&&G.phase==='pause'){
+    G.phase=G.back||'play'; G.last=performance.now(); tiltZero=null;
+    $('pmodal').classList.remove('on'); $('pausebtn').textContent='⏸';
+  }
+}
+$('pausebtn').onclick=()=>setPause(G&&G.phase!=='pause');
+$('p-resume').onclick=()=>setPause(false);
+$('p-restart').onclick=()=>{ $('pmodal').classList.remove('on'); $('pausebtn').textContent='⏸'; startLevel(G.n); };
+$('p-quit').onclick=()=>{ $('pmodal').classList.remove('on'); $('pausebtn').textContent='⏸';
+  cancelAnimationFrame(raf); G=null; show('scr-map'); renderMap(); };
+addEventListener('keydown',e=>{ const k=(e.key||'').toLowerCase();
+  if(k==='escape'||k==='p') setPause(G&&G.phase!=='pause'); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden)setPause(true); });
+
+function setCenter(html){ $('center').innerHTML=html; }
+
+function update(dt){
+  const C=$('center');
+  if(G.phase==='intro'){
+    G.pt-=dt; G.dist+=G.speed*.4*dt;
+    const c=Math.ceil(G.pt);
+    setCenter(`<div class="lvl">מסלול ${G.n}</div><div class="msg">עקבי אחרי ${G.t[6]} :)</div>`+
+              (c<=3?`<div class="cnt">${[3,2,1].filter(v=>v<=c).join(' ')}</div>`:''));
+    if(G.pt<=0){ G.phase='play'; setCenter(''); }
+    return;
+  }
+  if(G.phase==='done')return;
+
+  G.time-=dt; G.dist+=G.speed*dt; G.clock+=dt;
+  if(G.flash>0)G.flash-=dt;
+
+  // ניווט
+  G.x += Math.max(-1,Math.min(1,tilt/26))*dt*2.6;
+  G.x = Math.max(-3.4,Math.min(3.4,G.x));
+  tilt*=.968;
+
+  // אבק/רוח חולפים
+  for(const d of G.dust){ d.z-=G.speed*dt*1.35; if(d.z<1.4){ d.z=26+Math.random()*8; d.wx=G.x+(Math.random()-.5)*7; } }
+
+  // כשמשהו נדבק — הדאון מתייצב לבד על המסלול, ואין קנס על יציאה או על אגודל שהורם.
+  // ככה אפשר להתרכז רק בנשיפה.
+  if(G.stuck){
+    G.x += (pathAt(G.dist,G.seed)-G.x)*Math.min(1,dt*2.2);
+    G.off=0; G.noThumb=0;
+  } else {
+    const err=Math.abs(pathAt(G.dist,G.seed)-G.x);
+    G.off = err>pathW(G.dist)*.95 ? G.off+dt : 0;
+    if(G.off>1.7){ hit('יצאת מהמסלול'); G.off=0; }
+    if(HASTOUCH&&thumbs<2){ G.noThumb+=dt; if(G.noThumb>3.5){ hit('אגודלים על המוט!'); G.noThumb=0; } }
+    else G.noThumb=0;
+  }
+
+  // שקשוק
+  G.shakeIn-=dt;
+  if(G.shakeIn<=0&&G.shakeAsk<=0){ G.shakeAsk=4; }
+  if(G.shakeAsk>0){
+    G.shakeAsk-=dt;
+    if(shakeFlag){ G.platform=(G.platform+1)%4; G.coins+=5; G.shakeAsk=0; G.shakeIn=24+Math.random()*12; G.flash=.6; }
+    else if(G.shakeAsk<=0){ hit('פספסת את השקשוק'); G.shakeIn=24+Math.random()*12; }
+  }
+  shakeFlag=false;
+
+  // דבר רע שנדבק
+  if(G.stuck){ G.stuck.t-=dt;
+    if(blowLevel>.22)G.stuck=null;
+    else if(G.stuck.t<=0){ G.stuck=null; hit('לא הספקת לנשוף'); } }
+
+  // פריטים
+  G.spawn-=dt;
+  if(G.spawn<=0){
+    G.spawn=.7+Math.random()*.55;
+    const bad=Math.random()<.25+Math.min(.13,G.n*.004);
+    const pool=bad?G.t[3]:G.t[2];
+    const d=G.dist+44;
+    // כל הפריטים — טובים ורעים — תמיד בתוך המסלול. מחוץ למסלול אין מה לאסוף.
+    G.items.push({d, wx:pathAt(d,G.seed)+pathW(d)*(bad?(Math.random()<.5?-1:1)*(.3+Math.random()*.45):(Math.random()-.5)*.9),
+                  bad, e:pool[Math.floor(Math.random()*pool.length)]});
+  }
+  for(const it of G.items){
+    if(it.d-G.dist<1.7&&!it.dead){ it.dead=true;
+      if(Math.abs(it.wx-G.x)<.62){ if(it.bad){ if(!G.stuck)G.stuck={e:it.e,t:8}; } else { G.coins++; G.flash=.25; } } }
+  }
+  G.items=G.items.filter(i=>!i.dead);
+
+  $('hud-hearts').textContent='❤️'.repeat(G.hearts)+'🖤'.repeat(3-G.hearts);
+  $('hud-time').textContent=fmt(Math.max(0,G.time));
+  $('hud-coins').textContent='🪙 '+G.coins;
+
+  // הודעות באמצע
+  if(G.stuck) setCenter(`<div class="msg" style="font-size:26px">💨 ${micOK?'תנשפי על המסך!':'געי בכל מקום במסך'}</div>`
+    +`<div class="lvl" style="letter-spacing:1px;margin-top:8px">הדאון טס לבד עכשיו — רק תנשפי</div>`);
+  else if(G.shakeAsk>0) setCenter(`<div class="msg" style="color:var(--gold)">🤝 שקשק!</div>`);
+  else if(G.off>.7) setCenter(`<div class="msg" style="font-size:24px;color:var(--bad)">חזרי ל${G.t[6]}</div>`);
+  else if(C.innerHTML) setCenter('');
+
+  if(G.time<=0)finish(true); else if(G.hearts<=0)finish(false);
+}
+function hit(msg){ G.hearts--; G.flash=.5; setCenter(`<div class="msg" style="color:var(--bad)">💥 ${msg}</div>`); }
+
+/* ===== ציור: מבט מגוף ראשון דרך שלד הדאון =====
+   הקרקע נבנית שורה-שורה בפרספקטיבה אמיתית: לכל שורת פיקסלים מחושב העומק שלה בעולם,
+   ולפיו מיקום ורוחב המסלול. ככה מתקבל משטח שנמתח לאופק במקום פס שמתארך.        */
+const HZ=.345, FY=.82, CAMH=2.15, VIS=95;               // אופק, מוקד אנכי, גובה טיסה, טווח ראייה
+
+let CH=CAMH;                                            // גובה הטיסה הנוכחי (עם נשימת הכנפיים)
+function proj(z,W,H){ return {y:H*HZ+CH*H*FY/z, s:W*1.25/z}; }   // עומק → שורה + קנה מידה
+
+function draw(){
+  const {W,H,pal}=G, hz=H*HZ, sky=G.t[4], sh=[0,.08,.16,.24][G.platform];
+  const roll=Math.max(-.22,Math.min(.22,tilt/70));
+  const camH=CAMH+Math.sin(G.clock*1.7)*.05; CH=camH;
+
+  cx.save();
+  cx.translate(W/2,hz); cx.rotate(roll); cx.translate(-W/2,-hz);
+  const X0=-W*.45, XW=W*1.9;                             // הרחבה כדי שהסיבוב לא יחשוף פינות
+
+  /* --- שמיים --- */
+  const g=cx.createLinearGradient(0,-H*.3,0,hz);
+  g.addColorStop(0,sky[0]); g.addColorStop(1,sky[1]);
+  cx.fillStyle=g; cx.fillRect(X0,-H*.4,XW,hz+H*.4);
+  /* כוכבים */
+  cx.fillStyle='#fff';
+  for(const s of G.stars){ cx.globalAlpha=(.2+s.s*.45)*(1-sh);
+    cx.fillRect(X0+((s.x*XW-G.x*60*(1+s.s))%XW+XW)%XW, -H*.25+s.y*(hz+H*.25), 1.5+s.s*1.5, 1.5+s.s*1.5); }
+  cx.globalAlpha=1;
+  /* שמש/ירח נמוך באופק */
+  const sunX=W/2-G.x*70, sunR=Math.min(W*.22,90);
+  const sg=cx.createRadialGradient(sunX,hz-sunR*.25,sunR*.15,sunX,hz-sunR*.25,sunR);
+  sg.addColorStop(0,'#ffffffcc'); sg.addColorStop(.45,pal.p2[0]+''); sg.addColorStop(1,'#00000000');
+  cx.fillStyle=sg; cx.beginPath(); cx.arc(sunX,hz-sunR*.25,sunR,0,7); cx.fill();
+  /* רכס הרים רחוק — מתחבר לאופק */
+  for(let L=0;L<2;L++){
+    const amp=[30,52][L], px=G.x*[38,70][L], step=XW/14;
+    cx.fillStyle=L?pal.g1[FOG-3]:pal.g1[FOG-1];
+    cx.beginPath(); cx.moveTo(X0,hz+2);
+    for(let i=0;i<=15;i++){ const x=X0+i*step-((G.dist*[.9,1.7][L]+px)%step);
+      const nse=Math.sin(i*1.9+L*3)*.6+Math.sin(i*.7+L)*.4;
+      cx.lineTo(x,hz-Math.abs(nse)*amp-4); }
+    cx.lineTo(X0+XW,hz+2); cx.closePath(); cx.fill();
+  }
+
+  /* --- קרקע בפרספקטיבה, שורה אחרי שורה --- */
+  const wave=G.clock*1.1, ROW=2, yEnd=H+W*.3, water=pal.type==='w';
+  const yTop=Math.ceil(hz)+1;
+  // רצועת אובך רחוקה שסוגרת את הפער עד האופק
+  cx.fillStyle=pal.g1[FOG-1]; cx.fillRect(X0,hz,XW,camH*H*FY/VIS+ROW+1);
+
+  for(let y=yTop;y<yEnd;y+=ROW){
+    const z=camH*H*FY/(y-hz);                      // העומק שמיוצג ע"י השורה הזו
+    if(z>VIS)continue;
+    const wz=G.dist+z, sc=W*1.25/z;
+    const fi=Math.min(FOG-1,(z/VIS*FOG*1.25)|0);   // ערפל לפי מרחק
+    const c=W/2+(pathAt(wz,G.seed)-G.x)*sc;
+    const hw=pathW(wz)*sc, ed=Math.max(1,.05*sc);
+
+    /* --- קרקע: פרוסה מתוך מפת השטח, נמתחת לפי העומק --- */
+    const sy=((wz%TW)+TW)%TW/TW*TPX;
+    const iL=Math.floor((G.x+(X0-W/2)/sc)/TW), iR=Math.floor((G.x+(X0+XW-W/2)/sc)/TW);
+    if(iR-iL<=5){
+      const tw=TW*sc;
+      for(let i=iL;i<=iR;i++) cx.drawImage(G.tex,0,sy,TPX,1, W/2+(i*TW-G.x)*sc, y, tw, ROW);
+    } else { cx.fillStyle=pal.g1[fi]; cx.fillRect(X0,y,XW,ROW); }
+    // אובך מרחק על הקרקע
+    if(fi>0){ cx.globalAlpha=Math.min(.92,fi/(FOG-1)*.92); cx.fillStyle=sky[1];
+              cx.fillRect(X0,y,XW,ROW); cx.globalAlpha=1; }
+
+    /* --- המסלול: פרוסת טקסטורה שנמתחת על רוחבו --- */
+    if(hw>1){
+      if(hw>9){ cx.fillStyle=pal.g1[Math.max(0,fi-1)];     // גדות
+        cx.fillRect(c-hw-ed*2.5,y,ed*2.5,ROW); cx.fillRect(c+hw,y,ed*2.5,ROW); }
+      const flow=water?wave*1.9:(pal.type==='l'?wave*.8:0);
+      const py=((((wz+flow)%RV)+RV)%RV)/RV*RH;
+      cx.drawImage(G.ptex,0,py,RW,1, c-hw, y, hw*2, ROW);
+      if(fi>0){ cx.globalAlpha=Math.min(.9,fi/(FOG-1)*.9); cx.fillStyle=sky[1];
+                cx.fillRect(c-hw,y,hw*2,ROW); cx.globalAlpha=1; }
+      // נצנוץ אור נע על המים
+      if(water&&hw>6){ const gl=Math.sin(wz*.7-G.clock*2.2)*.5+.5;
+        if(gl>.78){ cx.globalAlpha=(gl-.78)*1.3; cx.fillStyle='#ffffff';
+          cx.fillRect(c-hw*.5+Math.sin(wz*.26)*hw*.35,y,hw*.45,ROW); cx.globalAlpha=1; } }
+      // סימון אדום כשיוצאים מהמסלול
+      if(G.off>.6){ cx.globalAlpha=.55; cx.fillStyle='#ff5d7a';
+        cx.fillRect(c-hw,y,ed,ROW); cx.fillRect(c+hw-ed,y,ed,ROW); cx.globalAlpha=1; }
+    }
+  }
+
+  /* --- נוף בצידי הדרך: צלליות סלעים ושיחים בלבד.
+         בכוונה לא אימוג'י — כדי שלא יתבלבל עם פריטים שצריך לאסוף.        --- */
+  const i0=Math.floor(G.dist/6);
+  for(let i=i0+15;i>=i0;i--){
+    const wz=i*6+((i*37)%11)*.3, z=wz-G.dist; if(z<1.6||z>VIS*.55)continue;
+    const side=(i%2)?1:-1, wx=pathAt(wz,G.seed)+side*(1.6+((i*53)%19)/19*2.4);
+    const P=proj(z,W,H), x=W/2+(wx-G.x)*P.s, sz=Math.min(H*.26,P.s*.34);
+    if(sz<3)continue;
+    const fi=Math.min(FOG-1,(z/VIS*FOG*1.25)|0), kind=i%3;
+    cx.fillStyle='#00000038';                                   // צל על הקרקע
+    cx.beginPath(); cx.ellipse(x,P.y,sz*.5,sz*.13,0,0,7); cx.fill();
+    cx.fillStyle=pal.sil[fi];
+    if(kind===0){                                               // סלע
+      cx.beginPath(); cx.moveTo(x-sz*.42,P.y);
+      cx.lineTo(x-sz*.3,P.y-sz*.42); cx.lineTo(x+sz*.05,P.y-sz*.55);
+      cx.lineTo(x+sz*.38,P.y-sz*.3); cx.lineTo(x+sz*.44,P.y); cx.closePath(); cx.fill();
+      cx.fillStyle=pal.sil2[fi]; cx.beginPath();
+      cx.moveTo(x+sz*.05,P.y-sz*.55); cx.lineTo(x+sz*.38,P.y-sz*.3);
+      cx.lineTo(x+sz*.44,P.y); cx.lineTo(x+sz*.12,P.y); cx.closePath(); cx.fill();
+    } else if(kind===1){                                        // שיח
+      cx.beginPath(); cx.ellipse(x-sz*.16,P.y-sz*.26,sz*.26,sz*.24,0,0,7);
+      cx.ellipse(x+sz*.18,P.y-sz*.2,sz*.22,sz*.2,0,0,7);
+      cx.ellipse(x,P.y-sz*.46,sz*.24,sz*.22,0,0,7); cx.fill();
+    } else {                                                    // עמוד/גזע גבוה
+      cx.fillRect(x-sz*.07,P.y-sz*.95,sz*.14,sz*.95);
+      cx.beginPath(); cx.ellipse(x,P.y-sz*1.02,sz*.3,sz*.2,0,0,7); cx.fill();
+    }
+  }
+  cx.globalAlpha=1; cx.textAlign='center';
+
+  /* --- אבק/רוח חולפים --- */
+  cx.strokeStyle='#ffffff'; cx.lineWidth=1.6;
+  for(const d of G.dust){ const P=proj(d.z,W,H), x=W/2+(d.wx-G.x)*P.s;
+    cx.globalAlpha=Math.max(0,.5-d.z/40); cx.beginPath();
+    cx.moveTo(x,P.y-d.h*P.s*.25); cx.lineTo(x,P.y-d.h*P.s*.25+Math.min(26,P.s*.05)); cx.stroke(); }
+  cx.globalAlpha=1;
+
+  /* --- פריטים: מרחוק לקרוב --- */
+  cx.textBaseline='middle';
+  const sorted=[...G.items].sort((a,b)=>b.d-a.d);
+  for(const it of sorted){
+    const z=it.d-G.dist; if(z<1.2||z>VIS*.6)continue;
+    const P=proj(z,W,H), x=W/2+(it.wx-G.x)*P.s, s=Math.min(H*.34,P.s*.34);
+    cx.globalAlpha=Math.max(0,Math.min(1,1.5-z/(VIS*.55)));
+    // צל על הקרקע
+    cx.fillStyle='#00000055'; cx.beginPath(); cx.ellipse(x,P.y+s*.42,s*.32,s*.1,0,0,7); cx.fill();
+    cx.fillStyle='#fff'; cx.font=s+'px serif';
+    cx.fillText(it.e,x,P.y-s*.35+Math.sin(G.clock*2+it.d)*s*.05);
+  }
+  cx.globalAlpha=1;
+  cx.restore();
+
+  /* --- אפקטים על "השמשה" (לא מסתובבים עם העולם) --- */
+  const vg=cx.createLinearGradient(0,H*.55,0,H);
+  vg.addColorStop(0,'#00000000'); vg.addColorStop(1,'#00000066');
+  cx.fillStyle=vg; cx.fillRect(0,H*.55,W,H*.45);
+
+  if(G.flash>0){ cx.fillStyle=(G.hearts<3&&G.flash>.3?'#ff5d7a':'#ffffff');
+    cx.globalAlpha=G.flash*.22; cx.fillRect(0,0,W,H); cx.globalAlpha=1; }
+
+  if(G.stuck){ cx.textAlign='center'; cx.textBaseline='middle';
+    cx.font=Math.min(96,W*.3)+'px serif'; cx.fillText(G.stuck.e,W*.5,H*.47);
+    cx.fillStyle='#00000066'; cx.fillRect(W*.2,H*.6,W*.6,9);
+    cx.fillStyle='#ff5d7a'; cx.fillRect(W*.2,H*.6,W*.6*(G.stuck.t/8),9); }
+
+  drawFrame(W,H);
+}
+
+/* שלד הדאון: משולש גדול + מוט אחיזה עם שתי כריות אגודל */
+function drawFrame(W,H){
+  const apex=[W*.5,-H*.06], lf=[-W*.16,H*.92], rt=[W*1.16,H*.92], t=Math.max(13,W*.045);
+  cx.lineCap='round'; cx.lineJoin='round';
+  // בד המפרש בקצוות (מסגרת כהה שקופה)
+  cx.fillStyle='#0a0812';
+  cx.beginPath(); cx.moveTo(0,0); cx.lineTo(apex[0],apex[1]); cx.lineTo(lf[0],lf[1]); cx.lineTo(0,H); cx.closePath(); cx.fill();
+  cx.beginPath(); cx.moveTo(W,0); cx.lineTo(apex[0],apex[1]); cx.lineTo(rt[0],rt[1]); cx.lineTo(W,H); cx.closePath(); cx.fill();
+  // מוטות
+  cx.strokeStyle='#3a3648'; cx.lineWidth=t;
+  cx.beginPath(); cx.moveTo(apex[0],apex[1]); cx.lineTo(lf[0],lf[1]); cx.stroke();
+  cx.beginPath(); cx.moveTo(apex[0],apex[1]); cx.lineTo(rt[0],rt[1]); cx.stroke();
+  cx.strokeStyle='#55506a'; cx.lineWidth=t*.35;
+  cx.beginPath(); cx.moveTo(apex[0]-2,apex[1]); cx.lineTo(lf[0]+6,lf[1]); cx.stroke();
+  // מוט אחיזה אופקי
+  const by=H*.845, bh=Math.max(24,H*.038);
+  cx.fillStyle='#d9d5e6'; cx.strokeStyle='#8f8aa5'; cx.lineWidth=2;
+  cx.beginPath(); cx.roundRect(W*.10,by-bh/2,W*.80,bh,bh/2); cx.fill(); cx.stroke();
+  cx.fillStyle='#b7b2c9';
+  cx.beginPath(); cx.roundRect(W*.05,by-bh*.75,W*.10,bh*1.5,7); cx.fill();
+  cx.beginPath(); cx.roundRect(W*.85,by-bh*.75,W*.10,bh*1.5,7); cx.fill();
+  // כריות אגודל
+  const r=Math.min(50,W*.15), ok=!HASTOUCH||thumbs>=2;
+  for(const px of [W*.27,W*.73]){
+    cx.beginPath(); cx.arc(px,by,r,0,7);
+    cx.fillStyle=ok?'#ffffff1a':'#ff5d7a33'; cx.fill();
+    cx.strokeStyle=ok?'#ffffff59':'#ff5d7a'; cx.lineWidth=2.5; cx.stroke();
+    if(!ok){ cx.font='26px serif'; cx.fillStyle='#fff'; cx.fillText('👍',px,by); }
+  }
+  if(HASTOUCH&&thumbs<2&&G.phase==='play'){
+    cx.font='700 14px sans-serif'; cx.fillStyle='#ff9db0'; cx.fillText('שני האגודלים על המוט',W/2,by+r+22);
+  }
+}
+
+function finish(win){
+  G.phase='done'; cancelAnimationFrame(raf); setCenter('');
+  const n=G.n, base=reward(n), bonus=Math.floor(G.coins/10);
+  const go=()=>{
+    if(win){ S.money+=base+bonus; S.done[n]=(S.done[n]||0)+1; save(); }
+    const nx=cost(n+1), need=Math.max(0,nx-S.money);
+    $('m-title').textContent=win?'סיימת את המסלול! 🎉':'נגמרו הלבבות 💔';
+    $('m-body').innerHTML=win
+      ? `אספת ${G.coins} פריטים.<br>הרווחת <b>${base+bonus} ₪</b> · סה"כ <b>${S.money} ₪</b><br>${
+          n<40?(need>0?`מסלול ${n+1} עולה ${nx} ₪ — חסרים ${need} ₪ (עוד כ‑${Math.ceil(need/(base+bonus||1))} סיבובים)`
+                     :`מסלול ${n+1} פתוח לקנייה! 🔓`):'סיימת את כל 40 המסלולים 🏆'}`
+      : `החזקת ${fmt(S.dur-G.time)}. אספת ${G.coins} פריטים. RUN IT BACK :)`;
+    $('modal').classList.add('on');
+  };
+  if(win){ $('tick').classList.add('on'); setTimeout(()=>{$('tick').classList.remove('on');go();},1100); } else go();
+}
+$('m-again').onclick=()=>{ $('modal').classList.remove('on'); startLevel(G.n); };
+$('m-map').onclick=()=>{ $('modal').classList.remove('on'); show('scr-map'); renderMap(); };
+
+/* ===== פתיחה ===== */
+const durLbl=()=>$('dur-lbl').textContent=S.dur===60?'נבחר: 60 שניות לשלב':'נבחר: 4 דקות לשלב';
+$('dur-short').onclick=()=>{S.dur=60;save();durLbl()};
+$('dur-long').onclick=()=>{S.dur=240;save();durLbl()};
+$('start').onclick=async()=>{ await initSensors(); show('scr-map'); renderMap(); };
+durLbl();
+</script>
+</body>
+</html>
